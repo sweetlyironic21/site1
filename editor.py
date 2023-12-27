@@ -2,18 +2,6 @@ import os
 import random
 from bs4 import BeautifulSoup
 
-def reshuffle_sentences(text):
-    # Split the text into sentences
-    sentences = text.split('. ')
-    
-    # Shuffle the sentences
-    random.shuffle(sentences)
-    
-    # Join the shuffled sentences back into text
-    shuffled_text = '. '.join(sentences)
-    
-    return shuffled_text
-
 def edit_html_file(file_path, new_folder_path):
     with open(file_path, 'r', encoding='utf-8') as file:
         html_content = file.read()
@@ -21,25 +9,27 @@ def edit_html_file(file_path, new_folder_path):
     # Parse the HTML using BeautifulSoup
     soup = BeautifulSoup(html_content, 'html.parser')
 
-    # Narrow down the search to specific elements (adjust as needed)
-    p_tags = soup.find_all('p')
+    # Find the main 'p' tag containing all sentences
+    main_p_tag = soup.find('p')
 
-    for p_tag in p_tags:
-        # Check if p_tag.string is not None before manipulating it
-        if p_tag.string:
-            p_tag.string.replace_with(reshuffle_sentences(p_tag.string))
+    if main_p_tag:
+        # Split the content of the main 'p' tag into sentences
+        sentences = main_p_tag.get_text().split('. ')
 
-    # Find all 'a' tags
-    a_tags = soup.find_all('a')
+        # Shuffle the list of available HTML files
+        html_files = os.listdir(new_folder_path)
+        random.shuffle(html_files)
 
-    # Change the first and second 'a' tags to link to random HTML files
-    for i, a_tag in enumerate(a_tags):
-        if i == 0 or i == 1:
-            random_html_file = random.choice(os.listdir(new_folder_path))
-            a_tag['href'] = os.path.join(random_html_file)
-        else:
-            # Remove other 'a' tags
-            a_tag.decompose()
+        # Convert 18 random sentences into 'a' tags
+        selected_sentences = random.sample(sentences, min(18, len(sentences)))
+
+        for i, sentence in enumerate(selected_sentences):
+            # Create a new 'a' tag
+            new_a_tag = soup.new_tag("a", href=os.path.join(html_files[i]))
+            new_a_tag.string = sentence.strip()  # Use the original sentence as anchor text
+
+            # Append the new 'a' tag within the main 'p' tag
+            main_p_tag.append(new_a_tag)
 
     # Remove all <li> tags
     li_tags = soup.find_all('li')
